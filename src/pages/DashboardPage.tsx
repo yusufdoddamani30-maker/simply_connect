@@ -1,0 +1,227 @@
+import React from 'react';
+import { motion } from 'motion/react';
+import { 
+  Users, 
+  Calendar, 
+  Zap, 
+  Trophy, 
+  ArrowUpRight,
+  Plus,
+  Lightbulb
+} from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { MOCK_USERS, MOCK_EVENTS, MOCK_PROJECTS } from '../data/mockData';
+import { cn, formatDate } from '../utils/helpers';
+
+export const DashboardPage: React.FC = () => {
+  const { user } = useAuth();
+
+  const stats = [
+    { label: 'Active Projects', value: '3', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'Team Requests', value: '12', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'Upcoming Events', value: '2', icon: Calendar, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { icon: Trophy, label: 'Skill Points', value: '850', color: 'text-purple-500', bg: 'bg-purple-500/10' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Welcome Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+            Welcome back, {user?.name.split(' ')[0]}! 👋
+          </h1>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">
+            Here's what's happening in your network today.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button className="px-4 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all flex items-center gap-2">
+            <Calendar className="w-4 h-4" /> Calendar
+          </button>
+          <button className="px-5 py-2.5 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+            <Plus className="w-4 h-4" /> New Project
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800"
+          >
+            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4", stat.bg)}>
+              <stat.icon className={cn("w-5 h-5", stat.color)} />
+            </div>
+            <p className="text-2xl font-black text-zinc-900 dark:text-white">{stat.value}</p>
+            <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1">{stat.label}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Main Content Area */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* AI Suggestions */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" /> Suggested Teammates
+              </h2>
+              <button className="text-sm font-bold text-emerald-500 hover:underline">View all</button>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {MOCK_USERS.filter(u => u.id !== user?.id).slice(0, 2).map((u, i) => (
+                <div key={i} className="p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 transition-all group">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <img src={u.avatar} alt={u.name} className="w-12 h-12 rounded-2xl object-cover" />
+                      <div>
+                        <h3 className="font-bold text-zinc-900 dark:text-white group-hover:text-emerald-500 transition-colors">{u.name}</h3>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400">{u.branch}</p>
+                      </div>
+                    </div>
+                    <div className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-lg uppercase">
+                      {u.compatibility}% Match
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {u.skills.slice(0, 3).map(s => (
+                      <span key={s} className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold rounded-md">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                  <button className="w-full py-2 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                    Connect <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* AI Project Idea Generator */}
+          <section className="p-8 bg-emerald-500 rounded-[2rem] text-white relative overflow-hidden shadow-xl shadow-emerald-500/20">
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center">
+                  <Lightbulb className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight">Stuck for an idea?</h2>
+              </div>
+              <p className="text-emerald-50 mb-8 max-w-md">
+                Our AI can analyze your skills and interests to generate unique project ideas tailored just for you.
+              </p>
+              <button className="px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-sm hover:scale-105 transition-all shadow-lg">
+                Generate Project Idea
+              </button>
+            </div>
+            <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+          </section>
+
+          {/* Activity Feed */}
+          <section>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-4">Recent Activity</h2>
+            <div className="space-y-4">
+              {[
+                { user: 'Sarah Chen', action: 'posted a new micro task', time: '2h ago', icon: Zap },
+                { user: 'Alex Johnson', action: 'joined "EcoTrack App"', time: '5h ago', icon: Users },
+                { user: 'Dr. Miller', action: 'verified your skill: React', time: '1d ago', icon: Trophy },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                  <div className="w-10 h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5 text-zinc-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-zinc-900 dark:text-white">
+                      <span className="font-bold">{item.user}</span> {item.action}
+                    </p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium uppercase tracking-wider">{item.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar Area */}
+        <div className="space-y-8">
+          {/* Upcoming Events */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Upcoming Events</h2>
+              <button className="text-xs font-bold text-emerald-500 hover:underline">View all</button>
+            </div>
+            <div className="space-y-3">
+              {MOCK_EVENTS.map((event, i) => (
+                <div key={i} className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-emerald-500/10 text-emerald-500 rounded-lg flex items-center justify-center text-[10px] font-black uppercase">
+                      {event.type.slice(0, 4)}
+                    </div>
+                    <h3 className="text-sm font-bold text-zinc-900 dark:text-white truncate">{event.title}</h3>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider">
+                    <span>{formatDate(event.date)}</span>
+                    <span>{event.location}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Mini Calendar Preview */}
+          <section className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800">
+            <h2 className="text-sm font-bold text-zinc-900 dark:text-white mb-4">February 2026</h2>
+            <div className="grid grid-cols-7 gap-1 text-center">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+                <span key={d} className="text-[10px] font-bold text-zinc-400 mb-2">{d}</span>
+              ))}
+              {Array.from({ length: 28 }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "aspect-square flex items-center justify-center text-[10px] font-bold rounded-lg transition-all",
+                    i + 1 === 26 ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  )}
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Quick Stats */}
+          <section className="p-6 bg-zinc-900 dark:bg-zinc-800 rounded-3xl text-white">
+            <h2 className="text-sm font-bold mb-4 uppercase tracking-widest opacity-50">Network Strength</h2>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span>Connections</span>
+                  <span className="font-bold">128</span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 w-[65%]"></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span>Endorsements</span>
+                  <span className="font-bold">42</span>
+                </div>
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 w-[40%]"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
