@@ -9,15 +9,20 @@ import {
   CheckCircle2,
   Zap,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/helpers';
+import { optimizeResume } from '../services/aiService';
 
 export const ResumeBuilderPage: React.FC = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizationResult, setOptimizationResult] = useState<{ score: number; suggestions: string[] } | null>(null);
   const [resumeData, setResumeData] = useState({
     summary: 'Passionate student developer looking for opportunities to build impactful solutions.',
     experience: [
@@ -27,6 +32,15 @@ export const ResumeBuilderPage: React.FC = () => {
       { name: 'CampusNet', role: 'Lead Developer', desc: 'Built a student networking platform using React and AI.' }
     ]
   });
+
+  const handleOptimize = async () => {
+    setIsOptimizing(true);
+    const result = await optimizeResume({ ...resumeData, skills: user?.skills });
+    if (result) {
+      setOptimizationResult(result);
+    }
+    setIsOptimizing(false);
+  };
 
   const handleDownload = () => {
     alert('Downloading your resume as PDF...');
@@ -87,26 +101,48 @@ export const ResumeBuilderPage: React.FC = () => {
           <section className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Experience</h2>
-              <button className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all">
+              <button 
+                onClick={() => setResumeData({
+                  ...resumeData,
+                  experience: [...resumeData.experience, { company: '', role: '', period: '', desc: '' }]
+                })}
+                className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all"
+              >
                 <Plus className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               {resumeData.experience.map((exp, i) => (
                 <div key={i} className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 relative group">
-                  <button className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => {
+                      const newExp = resumeData.experience.filter((_, index) => index !== i);
+                      setResumeData({ ...resumeData, experience: newExp });
+                    }}
+                    className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <input 
                       type="text" 
                       value={exp.company}
+                      onChange={(e) => {
+                        const newExp = [...resumeData.experience];
+                        newExp[i].company = e.target.value;
+                        setResumeData({ ...resumeData, experience: newExp });
+                      }}
                       className="bg-transparent font-bold text-sm dark:text-white border-b border-zinc-200 dark:border-zinc-700 focus:border-emerald-500 outline-none pb-1"
                       placeholder="Company"
                     />
                     <input 
                       type="text" 
                       value={exp.period}
+                      onChange={(e) => {
+                        const newExp = [...resumeData.experience];
+                        newExp[i].period = e.target.value;
+                        setResumeData({ ...resumeData, experience: newExp });
+                      }}
                       className="bg-transparent text-xs text-zinc-500 border-b border-zinc-200 dark:border-zinc-700 focus:border-emerald-500 outline-none pb-1 text-right"
                       placeholder="Period"
                     />
@@ -114,11 +150,21 @@ export const ResumeBuilderPage: React.FC = () => {
                   <input 
                     type="text" 
                     value={exp.role}
+                    onChange={(e) => {
+                      const newExp = [...resumeData.experience];
+                      newExp[i].role = e.target.value;
+                      setResumeData({ ...resumeData, experience: newExp });
+                    }}
                     className="w-full bg-transparent text-xs font-bold text-emerald-500 mb-2 outline-none"
                     placeholder="Role"
                   />
                   <textarea 
                     value={exp.desc}
+                    onChange={(e) => {
+                      const newExp = [...resumeData.experience];
+                      newExp[i].desc = e.target.value;
+                      setResumeData({ ...resumeData, experience: newExp });
+                    }}
                     className="w-full bg-transparent text-xs text-zinc-500 resize-none outline-none"
                     placeholder="Description"
                   />
@@ -127,16 +173,119 @@ export const ResumeBuilderPage: React.FC = () => {
             </div>
           </section>
 
-          <div className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex gap-4">
-            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Zap className="w-6 h-6 text-white" />
+          <section className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Projects</h2>
+              <button 
+                onClick={() => setResumeData({
+                  ...resumeData,
+                  projects: [...resumeData.projects, { name: '', role: '', desc: '' }]
+                })}
+                className="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-400">AI Optimization</h4>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1 leading-relaxed">
-                Your resume is currently 82% optimized for ATS systems. Add more keywords related to "Full Stack Development" to improve your score.
+            <div className="space-y-4">
+              {resumeData.projects.map((proj, i) => (
+                <div key={i} className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 relative group">
+                  <button 
+                    onClick={() => {
+                      const newProj = resumeData.projects.filter((_, index) => index !== i);
+                      setResumeData({ ...resumeData, projects: newProj });
+                    }}
+                    className="absolute top-4 right-4 p-1.5 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <input 
+                    type="text" 
+                    value={proj.name}
+                    onChange={(e) => {
+                      const newProj = [...resumeData.projects];
+                      newProj[i].name = e.target.value;
+                      setResumeData({ ...resumeData, projects: newProj });
+                    }}
+                    className="w-full bg-transparent font-bold text-sm dark:text-white border-b border-zinc-200 dark:border-zinc-700 focus:border-emerald-500 outline-none pb-1 mb-4"
+                    placeholder="Project Name"
+                  />
+                  <input 
+                    type="text" 
+                    value={proj.role}
+                    onChange={(e) => {
+                      const newProj = [...resumeData.projects];
+                      newProj[i].role = e.target.value;
+                      setResumeData({ ...resumeData, projects: newProj });
+                    }}
+                    className="w-full bg-transparent text-xs font-bold text-emerald-500 mb-2 outline-none"
+                    placeholder="Your Role"
+                  />
+                  <textarea 
+                    value={proj.desc}
+                    onChange={(e) => {
+                      const newProj = [...resumeData.projects];
+                      newProj[i].desc = e.target.value;
+                      setResumeData({ ...resumeData, projects: newProj });
+                    }}
+                    className="w-full bg-transparent text-xs text-zinc-500 resize-none outline-none"
+                    placeholder="Project Description"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-[2.5rem] space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                  <Zap className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-400">AI Optimization</h4>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-500 uppercase font-black tracking-widest">Powered by Gemini</p>
+                </div>
+              </div>
+              <button 
+                onClick={handleOptimize}
+                disabled={isOptimizing}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold hover:bg-emerald-600 disabled:opacity-70 transition-all flex items-center gap-2"
+              >
+                {isOptimizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {isOptimizing ? 'Analyzing...' : 'Optimize Now'}
+              </button>
+            </div>
+
+            {optimizationResult ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="text-3xl font-black text-emerald-500">{optimizationResult.score}%</div>
+                  <div className="flex-1 h-2 bg-emerald-500/20 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${optimizationResult.score}%` }}
+                      className="h-full bg-emerald-500"
+                    />
+                  </div>
+                </div>
+                <ul className="space-y-2">
+                  {optimizationResult.suggestions.map((s, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-emerald-700 dark:text-emerald-400 leading-relaxed">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ) : (
+              <p className="text-xs text-emerald-600 dark:text-emerald-500 leading-relaxed">
+                Click "Optimize Now" to let our AI analyze your resume and provide specific suggestions for improvement.
               </p>
-            </div>
+            )}
           </div>
         </div>
 

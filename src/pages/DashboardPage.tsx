@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Users, 
   Calendar, 
@@ -7,14 +7,29 @@ import {
   Trophy, 
   ArrowUpRight,
   Plus,
-  Lightbulb
+  Lightbulb,
+  Loader2,
+  X,
+  CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_USERS, MOCK_EVENTS, MOCK_PROJECTS } from '../data/mockData';
 import { cn, formatDate } from '../utils/helpers';
+import { generateProjectIdea } from '../services/aiService';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const [isGeneratingIdea, setIsGeneratingIdea] = useState(false);
+  const [generatedIdea, setGeneratedIdea] = useState<{ title: string; description: string; features: string[] } | null>(null);
+
+  const handleGenerateIdea = async () => {
+    setIsGeneratingIdea(true);
+    const idea = await generateProjectIdea(user?.skills || [], user?.interests || []);
+    if (idea) {
+      setGeneratedIdea(idea);
+    }
+    setIsGeneratingIdea(false);
+  };
 
   const stats = [
     { label: 'Active Projects', value: '3', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -117,8 +132,13 @@ export const DashboardPage: React.FC = () => {
               <p className="text-emerald-50 mb-8 max-w-md">
                 Our AI can analyze your skills and interests to generate unique project ideas tailored just for you.
               </p>
-              <button className="px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-sm hover:scale-105 transition-all shadow-lg">
-                Generate Project Idea
+              <button 
+                onClick={handleGenerateIdea}
+                disabled={isGeneratingIdea}
+                className="px-8 py-4 bg-white text-emerald-600 rounded-2xl font-black text-sm hover:scale-105 transition-all shadow-lg flex items-center gap-2 disabled:opacity-70"
+              >
+                {isGeneratingIdea ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {isGeneratingIdea ? 'Generating...' : 'Generate Project Idea'}
               </button>
             </div>
             <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
@@ -179,8 +199,8 @@ export const DashboardPage: React.FC = () => {
           <section className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800">
             <h2 className="text-sm font-bold text-zinc-900 dark:text-white mb-4">February 2026</h2>
             <div className="grid grid-cols-7 gap-1 text-center">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
-                <span key={d} className="text-[10px] font-bold text-zinc-400 mb-2">{d}</span>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <span key={`${d}-${i}`} className="text-[10px] font-bold text-zinc-400 mb-2">{d}</span>
               ))}
               {Array.from({ length: 28 }).map((_, i) => (
                 <div 
@@ -222,6 +242,72 @@ export const DashboardPage: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {/* Idea Modal */}
+      <AnimatePresence>
+        {generatedIdea && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setGeneratedIdea(null)}
+              className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl border border-zinc-200 dark:border-zinc-800 p-8 lg:p-10"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center">
+                    <Lightbulb className="w-6 h-6 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-black text-zinc-900 dark:text-white">AI Project Idea</h2>
+                </div>
+                <button onClick={() => setGeneratedIdea(null)} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all">
+                  <X className="w-6 h-6 text-zinc-400" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-emerald-500">{generatedIdea.title}</h3>
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    {generatedIdea.description}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Key Features</h4>
+                  <ul className="space-y-2">
+                    {generatedIdea.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="pt-4 flex gap-3">
+                  <button 
+                    onClick={() => setGeneratedIdea(null)}
+                    className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded-2xl font-black text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                  >
+                    Close
+                  </button>
+                  <button className="flex-1 py-4 bg-emerald-500 text-white rounded-2xl font-black text-sm hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
+                    Save to Projects
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
